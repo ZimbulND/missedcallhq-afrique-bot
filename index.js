@@ -9,6 +9,7 @@ const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
 const processedMessages = new Set();
+const userStates = new Map();
 
 app.get("/", (req, res) => {
   res.send("Missed Call HQ Afrique Bot is running.");
@@ -61,8 +62,35 @@ app.post("/webhook", async (req, res) => {
     }
 
     let replyText;
+    const currentState = userStates.get(from);
 
-    if (cleanText === "1") {
+    if (currentState === "waiting_for_demo_info") {
+      console.log("Demo lead received:", incomingText);
+
+      userStates.delete(from);
+
+      replyText = `Merci. Vos informations ont bien été reçues.
+
+Notre équipe vous contactera pour organiser une démonstration, In Sha Allah.`;
+    } else if (currentState === "waiting_for_pricing_info") {
+      console.log("Pricing lead received:", incomingText);
+
+      userStates.delete(from);
+
+      replyText = `Merci. Vos informations ont bien été reçues.
+
+Nous vous enverrons nos tarifs adaptés à vos besoins, In Sha Allah.`;
+    } else if (currentState === "waiting_for_callback_info") {
+      console.log("Callback request received:", incomingText);
+
+      userStates.delete(from);
+
+      replyText = `Merci. Vos informations ont bien été reçues.
+
+Notre équipe vous rappellera dès que possible, In Sha Allah.`;
+    } else if (cleanText === "1") {
+      userStates.set(from, "waiting_for_demo_info");
+
       replyText = `Merci pour votre intérêt.
 
 Veuillez nous indiquer :
@@ -73,6 +101,8 @@ Veuillez nous indiquer :
 
 Nous vous contacterons pour organiser une démonstration, In Sha Allah.`;
     } else if (cleanText === "2") {
+      userStates.set(from, "waiting_for_pricing_info");
+
       replyText = `Merci pour votre intérêt.
 
 Veuillez nous indiquer :
@@ -83,6 +113,8 @@ Veuillez nous indiquer :
 
 Nous vous enverrons nos tarifs adaptés à vos besoins, In Sha Allah.`;
     } else if (cleanText === "3") {
+      userStates.set(from, "waiting_for_callback_info");
+
       replyText = `Merci.
 
 Veuillez nous communiquer :
