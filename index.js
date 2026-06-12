@@ -48,8 +48,21 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    const replyText =
-      "Bonjour 👋 Merci d’avoir contacté Missed Call HQ Afrique. Nous avons bien reçu votre message et nous vous répondrons bientôt, God willing.";
+const replyText = `Bonjour 👋
+
+Bienvenue chez Missed Call HQ Afrique.
+
+Nous aidons les entreprises à ne plus perdre de clients lorsqu’un appel est manqué.
+
+Comment pouvons-nous vous aider aujourd’hui ?
+
+1️⃣ Demander une démonstration
+
+2️⃣ Obtenir nos tarifs
+
+3️⃣ Être rappelé
+
+Répondez simplement par 1, 2 ou 3.`;
 
     const response = await axios.post(
       `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
