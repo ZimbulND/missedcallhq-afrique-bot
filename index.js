@@ -42,6 +42,7 @@ app.post("/webhook", async (req, res) => {
     const messageId = message.id;
     const from = message.from;
     const incomingText = message.text?.body || "";
+    const cleanText = incomingText.trim().toLowerCase();
 
     console.log("MESSAGE ID:", messageId);
     console.log("Message received from:", from);
@@ -59,7 +60,40 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    const replyText = `Bonjour 👋
+    let replyText;
+
+    if (cleanText === "1") {
+      replyText = `Merci pour votre intérêt.
+
+Veuillez nous indiquer :
+
+• Votre nom
+• Le nom de votre entreprise
+• Votre ville
+
+Nous vous contacterons pour organiser une démonstration, In Sha Allah.`;
+    } else if (cleanText === "2") {
+      replyText = `Merci pour votre intérêt.
+
+Veuillez nous indiquer :
+
+• Votre nom
+• Le nom de votre entreprise
+• Votre ville
+
+Nous vous enverrons nos tarifs adaptés à vos besoins, In Sha Allah.`;
+    } else if (cleanText === "3") {
+      replyText = `Merci.
+
+Veuillez nous communiquer :
+
+• Votre nom
+• Votre numéro de téléphone
+• Le meilleur moment pour vous joindre
+
+Nous vous rappellerons bientôt, In Sha Allah.`;
+    } else {
+      replyText = `Bonjour 👋
 
 Bienvenue chez Missed Call HQ Afrique.
 
@@ -76,6 +110,7 @@ Comment pouvons-nous vous aider aujourd’hui ?
 Répondez simplement par 1, 2 ou 3.
 
 Nous vous répondrons dans les plus brefs délais, In Sha Allah.`;
+    }
 
     const response = await axios.post(
       `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
