@@ -8,8 +8,8 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "missedcallhqafrique2026";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
+// Prevent duplicate replies if Meta sends the same webhook twice
 const processedMessages = new Set();
-const userStates = new Map();
 
 app.get("/", (req, res) => {
   res.send("Missed Call HQ Afrique Bot is running.");
@@ -27,24 +27,6 @@ app.get("/webhook", (req, res) => {
   return res.sendStatus(403);
 });
 
-async function sendWhatsAppMessage(to, body) {
-  return axios.post(
-    `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body }
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json"
-      }
-    }
-  );
-}
-
 app.post("/webhook", async (req, res) => {
   console.log("Incoming WhatsApp webhook:", JSON.stringify(req.body, null, 2));
 
@@ -61,7 +43,6 @@ app.post("/webhook", async (req, res) => {
     const messageId = message.id;
     const from = message.from;
     const incomingText = message.text?.body || "";
-    const cleanText = incomingText.trim().toLowerCase();
 
     console.log("MESSAGE ID:", messageId);
     console.log("Message received from:", from);
@@ -79,65 +60,7 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    let replyText;
-    const currentState = userStates.get(from);
-
-    if (currentState === "waiting_for_demo_info") {
-      userStates.delete(from);
-
-      replyText = `Merci. Vos informations ont bien été reçues.
-
-Notre équipe vous contactera pour organiser une démonstration, In Sha Allah.`;
-    } else if (currentState === "waiting_for_pricing_info") {
-      userStates.delete(from);
-
-      replyText = `Merci. Vos informations ont bien été reçues.
-
-Nous vous enverrons nos tarifs adaptés à vos besoins, In Sha Allah.`;
-    } else if (currentState === "waiting_for_callback_info") {
-      userStates.delete(from);
-
-      replyText = `Merci. Vos informations ont bien été reçues.
-
-Notre équipe vous rappellera dès que possible, In Sha Allah.`;
-    } else if (cleanText === "1") {
-      userStates.set(from, "waiting_for_demo_info");
-
-      replyText = `Merci pour votre intérêt.
-
-Veuillez nous indiquer :
-
-• Votre nom
-• Le nom de votre entreprise
-• Votre ville
-
-Nous vous contacterons pour organiser une démonstration, In Sha Allah.`;
-    } else if (cleanText === "2") {
-      userStates.set(from, "waiting_for_pricing_info");
-
-      replyText = `Merci pour votre intérêt.
-
-Veuillez nous indiquer :
-
-• Votre nom
-• Le nom de votre entreprise
-• Votre ville
-
-Nous vous enverrons nos tarifs adaptés à vos besoins, In Sha Allah.`;
-    } else if (cleanText === "3") {
-      userStates.set(from, "waiting_for_callback_info");
-
-      replyText = `Merci.
-
-Veuillez nous communiquer :
-
-• Votre nom
-• Votre numéro de téléphone
-• Le meilleur moment pour vous joindre
-
-Nous vous rappellerons bientôt, In Sha Allah.`;
-    } else {
-      replyText = `Bonjour 👋
+    const replyText = `Bonjour 👋
 
 Bienvenue chez Missed Call HQ Afrique.
 
@@ -151,17 +74,30 @@ Comment pouvons-nous vous aider aujourd’hui ?
 
 3️⃣ Être rappelé
 
-Répondez simplement par 1, 2 ou 3.
+Répondez simplement par 1, 2 ou 3.`;
 
-Nous vous répondrons dans les plus brefs délais, In Sha Allah.`;
-    }
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to: from,
+        type: "text",
+        text: {
+          body: replyText
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    const response = await sendWhatsAppMessage(from, replyText);
     console.log("Reply sent:", JSON.stringify(response.data, null, 2));
-
     return res.sendStatus(200);
   } catch (error) {
-    console.error("Error:", error.response?.data || error.message);
+    console.error("Error sending WhatsApp reply:", error.response?.data || error.message);
     return res.sendStatus(200);
   }
 });
