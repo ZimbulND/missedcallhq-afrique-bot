@@ -7,7 +7,6 @@ app.use(express.json());
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "missedcallhqafrique2026";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
-const LEADS_WEBHOOK_URL = process.env.LEADS_WEBHOOK_URL;
 
 const processedMessages = new Set();
 const userStates = new Map();
@@ -44,26 +43,6 @@ async function sendWhatsAppMessage(to, body) {
       }
     }
   );
-}
-
-async function saveLead(phone, requestType, message) {
-  if (!LEADS_WEBHOOK_URL) {
-    console.log("LEADS_WEBHOOK_URL missing. Lead not saved.");
-    return;
-  }
-
-  try {
-    await axios.post(LEADS_WEBHOOK_URL, {
-      date: new Date().toISOString(),
-      phone,
-      requestType,
-      message
-    });
-
-    console.log("Lead saved to Google Sheets.");
-  } catch (error) {
-    console.error("Lead save failed:", error.response?.data || error.message);
-  }
 }
 
 app.post("/webhook", async (req, res) => {
@@ -104,21 +83,18 @@ app.post("/webhook", async (req, res) => {
     const currentState = userStates.get(from);
 
     if (currentState === "waiting_for_demo_info") {
-      await saveLead(from, "Démonstration", incomingText);
       userStates.delete(from);
 
       replyText = `Merci. Vos informations ont bien été reçues.
 
 Notre équipe vous contactera pour organiser une démonstration, In Sha Allah.`;
     } else if (currentState === "waiting_for_pricing_info") {
-      await saveLead(from, "Tarifs", incomingText);
       userStates.delete(from);
 
       replyText = `Merci. Vos informations ont bien été reçues.
 
 Nous vous enverrons nos tarifs adaptés à vos besoins, In Sha Allah.`;
     } else if (currentState === "waiting_for_callback_info") {
-      await saveLead(from, "Être rappelé", incomingText);
       userStates.delete(from);
 
       replyText = `Merci. Vos informations ont bien été reçues.
