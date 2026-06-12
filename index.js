@@ -52,14 +52,18 @@ async function saveLead(phone, requestType, message) {
     return;
   }
 
-  await axios.post(LEADS_WEBHOOK_URL, {
-    date: new Date().toISOString(),
-    phone,
-    requestType,
-    message
-  });
+  try {
+    await axios.post(LEADS_WEBHOOK_URL, {
+      date: new Date().toISOString(),
+      phone,
+      requestType,
+      message
+    });
 
-  console.log("Lead saved to Google Sheets.");
+    console.log("Lead saved to Google Sheets.");
+  } catch (error) {
+    console.error("Lead save failed:", error.response?.data || error.message);
+  }
 }
 
 app.post("/webhook", async (req, res) => {
