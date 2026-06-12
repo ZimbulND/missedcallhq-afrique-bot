@@ -8,7 +8,6 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "missedcallhqafrique2026";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
-// Prevent duplicate replies if Meta sends the same webhook twice
 const processedMessages = new Set();
 
 app.get("/", (req, res) => {
@@ -74,7 +73,9 @@ Comment pouvons-nous vous aider aujourd’hui ?
 
 3️⃣ Être rappelé
 
-Répondez simplement par 1, 2 ou 3.`;
+Répondez simplement par 1, 2 ou 3.
+
+Nous vous répondrons dans les plus brefs délais, In Sha Allah.`;
 
     const response = await axios.post(
       `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
