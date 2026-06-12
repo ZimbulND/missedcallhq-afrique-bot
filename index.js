@@ -8,6 +8,9 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "missedcallhqafrique2026";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
+// Prevent duplicate replies if Meta sends the same webhook twice
+const processedMessages = new Set();
+
 app.get("/", (req, res) => {
   res.send("Missed Call HQ Afrique Bot is running.");
 });
@@ -37,18 +40,27 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
+    const messageId = message.id;
     const from = message.from;
     const incomingText = message.text?.body || "";
 
+    console.log("MESSAGE ID:", messageId);
     console.log("Message received from:", from);
     console.log("Message body:", incomingText);
+
+    if (processedMessages.has(messageId)) {
+      console.log("Duplicate message ignored:", messageId);
+      return res.sendStatus(200);
+    }
+
+    processedMessages.add(messageId);
 
     if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
       console.error("Missing WHATSAPP_TOKEN or PHONE_NUMBER_ID");
       return res.sendStatus(200);
     }
 
-const replyText = `Bonjour 👋
+    const replyText = `Bonjour 👋
 
 Bienvenue chez Missed Call HQ Afrique.
 
