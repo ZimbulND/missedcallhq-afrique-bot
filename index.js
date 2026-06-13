@@ -89,11 +89,13 @@ async function saveLead(phone, requestType, message) {
 
     console.log("Lead saved to Google Sheets.");
 
-    await sendLeadEmail({
-      phone,
-      requestType,
-      message
-    });
+  sendLeadEmail({
+  phone,
+  requestType,
+  message
+}).catch((error) => {
+  console.error("Lead email notification failed:", error.response?.data || error.message);
+});
   } catch (error) {
     console.error("Lead save failed:", error.response?.data || error.message);
   }
