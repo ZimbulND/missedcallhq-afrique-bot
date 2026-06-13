@@ -7,6 +7,7 @@ app.use(express.json());
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "missedcallhqafrique2026";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+const LEADS_WEBHOOK_URL = process.env.LEADS_WEBHOOK_URL;
 
 const processedMessages = new Set();
 const userStates = new Map();
@@ -26,6 +27,46 @@ app.get("/webhook", (req, res) => {
 
   return res.sendStatus(403);
 });
+
+async function saveLead(phone, requestType, message) {
+  if (!LEADS_WEBHOOK_URL) {
+    console.log("LEADS_WEBHOOK_URL missing. Lead not saved.");
+    return;
+  }
+
+  try {
+    await axios.post(LEADS_WEBHOOK_URL, {
+      date: new Date().toISOString(),
+      phone,
+      requestType,
+      message
+    });
+
+    console.log("Lead saved to Google Sheets.");
+  } catch (error) {
+    console.error("Lead save failed:", error.response?.data || error.message);
+  }
+}
+
+async function sendReply(to, replyText) {
+  return axios.post(
+    `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: {
+        body: replyText
+      }
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+}
 
 app.post("/webhook", async (req, res) => {
   console.log("Incoming WhatsApp webhook:", JSON.stringify(req.body, null, 2));
@@ -66,6 +107,7 @@ app.post("/webhook", async (req, res) => {
 
     if (currentState === "waiting_for_demo_info") {
       console.log("Demo lead received:", incomingText);
+      await saveLead(from, "Démonstration", incomingText);
 
       userStates.delete(from);
 
@@ -74,6 +116,7 @@ app.post("/webhook", async (req, res) => {
 Notre équipe vous contactera pour organiser une démonstration, In Sha Allah.`;
     } else if (currentState === "waiting_for_pricing_info") {
       console.log("Pricing lead received:", incomingText);
+      await saveLead(from, "Tarifs", incomingText);
 
       userStates.delete(from);
 
@@ -82,6 +125,7 @@ Notre équipe vous contactera pour organiser une démonstration, In Sha Allah.`;
 Nous vous enverrons nos tarifs adaptés à vos besoins, In Sha Allah.`;
     } else if (currentState === "waiting_for_callback_info") {
       console.log("Callback request received:", incomingText);
+      await saveLead(from, "Être rappelé", incomingText);
 
       userStates.delete(from);
 
@@ -144,25 +188,9 @@ Répondez simplement par 1, 2 ou 3.
 Nous vous répondrons dans les plus brefs délais, In Sha Allah.`;
     }
 
-    const response = await axios.post(
-      `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
-      {
-        messaging_product: "whatsapp",
-        to: from,
-        type: "text",
-        text: {
-          body: replyText
-        }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
+    const response = await sendReply(from, replyText);
     console.log("Reply sent:", JSON.stringify(response.data, null, 2));
+
     return res.sendStatus(200);
   } catch (error) {
     console.error("Error sending WhatsApp reply:", error.response?.data || error.message);
