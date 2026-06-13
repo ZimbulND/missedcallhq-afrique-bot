@@ -257,7 +257,7 @@ Nous vous répondrons dans les plus brefs délais, In Sha Allah.`;
     console.error("Error sending WhatsApp reply:", error.response?.data || error.message);
     return res.sendStatus(200);
   }
-});
+}); 
 
 const PORT = process.env.PORT || 3000;
 
