@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const nodemailer = require("nodemailer");
 
 const app = express();
 app.use(express.json());
@@ -8,6 +9,9 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "missedcallhqafrique2026";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 const LEADS_WEBHOOK_URL = process.env.LEADS_WEBHOOK_URL;
+
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 
 const processedMessages = new Set();
 const userStates = new Map();
@@ -28,6 +32,47 @@ app.get("/webhook", (req, res) => {
   return res.sendStatus(403);
 });
 
+async function sendLeadEmail({ phone, requestType, message }) {
+  if (!EMAIL_USER || !EMAIL_PASS) {
+    console.log("EMAIL_USER or EMAIL_PASS missing. Email not sent.");
+    return;
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: EMAIL_USER,
+      to: "myezsteps@gmail.com",
+      subject: "🚨 New Lead - Missed Call HQ Afrique",
+      text: `
+New Lead Received
+
+Phone: ${phone}
+Request Type: ${requestType}
+
+Message:
+${message}
+
+Status: New
+Assigned To: Mor
+
+Date: ${new Date().toLocaleString()}
+`
+    });
+
+    console.log("Lead email notification sent.");
+  } catch (error) {
+    console.error("Lead email notification failed:", error.response?.data || error.message);
+  }
+}
+
 async function saveLead(phone, requestType, message) {
   if (!LEADS_WEBHOOK_URL) {
     console.log("LEADS_WEBHOOK_URL missing. Lead not saved.");
@@ -43,6 +88,12 @@ async function saveLead(phone, requestType, message) {
     });
 
     console.log("Lead saved to Google Sheets.");
+
+    await sendLeadEmail({
+      phone,
+      requestType,
+      message
+    });
   } catch (error) {
     console.error("Lead save failed:", error.response?.data || error.message);
   }
