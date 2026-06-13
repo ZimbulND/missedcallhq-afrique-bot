@@ -149,7 +149,8 @@ app.post("/webhook", async (req, res) => {
 
     console.log("MESSAGE ID:", messageId);
     console.log("Message received from:", from);
-    console.log("Message body:", incomingText);
+    console.log("Message body:", incomingText); 
+    console.log("RAW TEXT:", JSON.stringify(incomingText));
 
     if (processedMessages.has(messageId)) {
       console.log("Duplicate message ignored:", messageId);
