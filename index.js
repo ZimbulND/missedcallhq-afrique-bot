@@ -72,30 +72,38 @@ Date: ${new Date().toLocaleString()}
     console.error("Lead email notification failed:", error.response?.data || error.message);
   }
 }
-
 async function saveLead(phone, requestType, message) {
   if (!LEADS_WEBHOOK_URL) {
     console.log("LEADS_WEBHOOK_URL missing. Lead not saved.");
     return;
   }
 
+  const lines = message
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
   try {
     await axios.post(LEADS_WEBHOOK_URL, {
       date: new Date().toISOString(),
       phone,
+      name: lines[0] || "",
+      business: lines[1] || "",
+      city: lines[2] || "",
       requestType,
-      message
+      status: "New",
+      assignedTo: "Mor"
     });
 
     console.log("Lead saved to Google Sheets.");
 
-  sendLeadEmail({
-  phone,
-  requestType,
-  message
-}).catch((error) => {
-  console.error("Lead email notification failed:", error.response?.data || error.message);
-});
+    sendLeadEmail({
+      phone,
+      requestType,
+      message
+    }).catch((error) => {
+      console.error("Lead email notification failed:", error.response?.data || error.message);
+    });
   } catch (error) {
     console.error("Lead save failed:", error.response?.data || error.message);
   }
